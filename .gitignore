@@ -1,6 +1,9 @@
 # OSX
 .DS_Store
 
+# gradle 
+.gradle
+
 ### STS ###
 .apt_generated
 .classpath
