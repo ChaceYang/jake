@@ -20,4 +20,4 @@ A Jake ID is composed of
 
 The MIT License (MIT)
 
-See [LICENSE]() for details.
+See [LICENSE](https://github.com/funcfoo/jake/blob/master/LICENSE) for details.
