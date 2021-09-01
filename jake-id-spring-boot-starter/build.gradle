@@ -1,0 +1,4 @@
+dependencies {
+    compile project(':jake-id')
+    compile project(':jake-id-spring-boot-autoconfigure')
+}

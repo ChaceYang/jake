@@ -1,1 +1,4 @@
 rootProject.name = 'jake'
+include 'jake-id'
+include 'jake-id-spring-boot-autoconfigure'
+include 'jake-id-spring-boot-starter'

@@ -1,0 +1,11 @@
+plugins {
+    id "org.springframework.boot" version "2.5.4"
+}
+
+apply plugin: 'org.springframework.boot'
+apply plugin: 'io.spring.dependency-management'
+
+dependencies {
+    compileOnly("org.springframework.boot:spring-boot-starter")
+    testImplementation "org.springframework.boot:spring-boot-starter-test"
+}
