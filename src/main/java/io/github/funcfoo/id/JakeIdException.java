@@ -1,6 +1,8 @@
 package io.github.funcfoo.id;
 
 public class JakeIdException extends RuntimeException {
+    static final long serialVersionUID = -725766903495102185L;
+
     public JakeIdException() {
     }
 
