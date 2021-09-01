@@ -88,6 +88,7 @@ public class JakeId {
     /**
      * get currentTimeMillis
      * overwrite on test
+     * @return currentTimeMillis
      */
     public long currentTimeMillis() {
         return System.currentTimeMillis();
