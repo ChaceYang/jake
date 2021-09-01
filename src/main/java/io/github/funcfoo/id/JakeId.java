@@ -1,6 +1,5 @@
 package io.github.funcfoo.id;
 
-import java.time.Instant;
 import java.util.concurrent.locks.LockSupport;
 
 public class JakeId {
@@ -27,20 +26,24 @@ public class JakeId {
     private int sequence = 0;
 
     public JakeId() {
-        this(defaultStartTime(), defaultMachineId());
+        this(JakeUtils.defaultStartTime(), JakeUtils.defaultMachineId());
     }
 
-    public JakeId(long startTime, long machineId) {
+    public JakeId(int machineId) {
+        this(JakeUtils.defaultStartTime(), machineId);
+    }
+
+    public JakeId(long startTime, int machineId) {
         long now = currentTimeMillis();
         if (startTime > now) {
             throw new IllegalArgumentException("StartTime must be less than currentTimeMillis");
         }
-        long maxMachinedId = (1L << BIT_LENGTH_MACHINE_ID);
+        int maxMachinedId = (1 << BIT_LENGTH_MACHINE_ID);
         if (machineId < 0 || machineId >= maxMachinedId) {
             throw new IllegalArgumentException("Machine id must be greater than 0 and less than " + maxMachinedId);
         }
         this.startTime = startTime;
-        this.machineId = machineId << BIT_LENGTH_SEQUENCE;
+        this.machineId = (long) machineId << BIT_LENGTH_SEQUENCE;
     }
 
     public synchronized long nextId() {
@@ -88,22 +91,5 @@ public class JakeId {
      */
     public long currentTimeMillis() {
         return System.currentTimeMillis();
-    }
-
-    private static long defaultStartTime() {
-        return Instant.parse("2014-01-01T00:00:00Z").toEpochMilli();
-    }
-
-    private static int defaultMachineId() {
-        return machineId(JakeUtils.privateIpv4());
-    }
-
-    /**
-     * Generate machine id, visible for test
-     * @param ipv4 int arr
-     * @return machineId
-     */
-    static int machineId(int[] ipv4) {
-        return ((ipv4[2] % 32) << 8) | ipv4[3];
     }
 }

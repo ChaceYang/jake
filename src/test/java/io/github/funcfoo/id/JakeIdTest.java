@@ -34,20 +34,20 @@ class JakeIdTest {
 
     @Test
     void machineID() {
-        int machineID1 = JakeId.machineId(splitIpv4("192.168.33.0"));
+        int machineID1 = JakeUtils.machineId(splitIpv4("192.168.33.0"));
         assertEquals(256, machineID1);
-        int machineID2 = JakeId.machineId(splitIpv4("192.168.33.1"));
+        int machineID2 = JakeUtils.machineId(splitIpv4("192.168.33.1"));
         assertEquals(257, machineID2);
-        int machineID3 = JakeId.machineId(splitIpv4("192.168.0.1"));
+        int machineID3 = JakeUtils.machineId(splitIpv4("192.168.0.1"));
         assertEquals(1, machineID3);
-        int machineID5 = JakeId.machineId(splitIpv4("192.168.31.255"));
+        int machineID5 = JakeUtils.machineId(splitIpv4("192.168.31.255"));
         assertEquals(8191, machineID5);
     }
 
     @Test
     void nextSameMilliId() {
         long currentTimeMillis = Instant.parse("2022-01-01T00:00:00.000Z").toEpochMilli();
-        JakeId jIdGenerator = new JakeId() {
+        JakeId jIdGenerator = new JakeId(JakeUtils.machineId(splitIpv4("192.168.13.11"))) {
             @Override
             public long currentTimeMillis() {
                 return currentTimeMillis;
@@ -63,7 +63,7 @@ class JakeIdTest {
     @Test
     void nexIncreaseMilliId() {
         final AtomicLong currentTimeMillis = new AtomicLong(1663412306944L);
-        JakeId jIdGenerator = new JakeId() {
+        JakeId jIdGenerator = new JakeId(JakeUtils.machineId(splitIpv4("192.168.13.11"))) {
             @Override
             public long currentTimeMillis() {
                 return currentTimeMillis.get();
@@ -88,7 +88,7 @@ class JakeIdTest {
     @Test
     void timestampGreaterThan1000() {
         final AtomicLong currentTimeMillis = new AtomicLong(1663412306944L);
-        JakeId jIdGenerator = new JakeId() {
+        JakeId jIdGenerator = new JakeId(JakeUtils.machineId(splitIpv4("192.168.13.11"))) {
             @Override
             public long currentTimeMillis() {
                 return currentTimeMillis.get();
@@ -119,7 +119,7 @@ class JakeIdTest {
     @Test
     void timestampLessThan1000() {
         final AtomicLong currentTimeMillis = new AtomicLong(1663412306944L);
-        JakeId jIdGenerator = new JakeId() {
+        JakeId jIdGenerator = new JakeId(JakeUtils.machineId(splitIpv4("192.168.13.11"))) {
             @Override
             public long currentTimeMillis() {
                 return currentTimeMillis.get();
