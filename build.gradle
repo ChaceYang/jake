@@ -21,15 +21,7 @@ subprojects {
 
     ext {
         isNeedSign = project.hasProperty('signing.gnupg.keyName')
-    }
-
-    dependencies {
-        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.0'
-        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.0'
-    }
-
-    test {
-        useJUnitPlatform()
+        junit5Version = '5.7.0'
     }
 
     java {

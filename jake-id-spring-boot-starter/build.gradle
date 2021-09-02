@@ -1,4 +1,15 @@
+plugins {
+    id "org.springframework.boot" version "1.5.22.RELEASE"
+}
+
+apply plugin: 'io.spring.dependency-management'
+
+bootRepackage.enabled = false
+
 dependencies {
     compile project(':jake-id')
     compile project(':jake-id-spring-boot-autoconfigure')
+    testImplementation project(':jake-id')
+    testImplementation "org.springframework.boot:spring-boot-starter"
+    testImplementation "org.springframework.boot:spring-boot-starter-test"
 }
