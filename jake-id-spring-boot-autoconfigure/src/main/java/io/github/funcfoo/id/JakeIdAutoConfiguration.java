@@ -20,6 +20,6 @@ public class JakeIdAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public JakeId jakeId(JakeIdProperties jakeIdProperties) {
-        return new JakeId(jakeIdProperties.getStartTime(), jakeIdProperties.getMachineId());
+        return jakeIdProperties.toBuilder().build();
     }
 }
