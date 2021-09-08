@@ -78,6 +78,7 @@ public class JakeIdBuilder {
      *  bitLengthOfTime = 38, 68 year
      */
     public JakeIdBuilder modelS() {
+        defaultStartTimeMachineId();
         this.bitLengthOfSequence = 9;
         this.sequenceLifeCycle = 1;
         this.bitLengthOfMachineId = 13;
@@ -92,6 +93,7 @@ public class JakeIdBuilder {
      *  bitLengthOfTime = 38, 86 year
      */
     public JakeIdBuilder modelL() {
+        defaultStartTimeMachineId();
         this.bitLengthOfSequence = 9;
         this.sequenceLifeCycle = 10;
         this.bitLengthOfMachineId = 16;
@@ -99,13 +101,17 @@ public class JakeIdBuilder {
         return this;
     }
 
-    public JakeId build() {
+    private void defaultStartTimeMachineId() {
         if(machineId == null) {
             this.machineId = JakeUtils.defaultMachineId();
         }
         if(startTime == null) {
             this.startTime = JakeUtils.defaultStartTime();
         }
+    }
+
+    public JakeId build() {
+        defaultStartTimeMachineId();
         Objects.requireNonNull(bitLengthOfTime);
         Objects.requireNonNull(bitLengthOfMachineId);
         Objects.requireNonNull(bitLengthOfSequence);
