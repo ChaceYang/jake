@@ -4,19 +4,22 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.LockSupport;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class JakeIdModelSTest {
+    private static final Long INIT_TIME_MILLS = Instant.parse("2022-01-01T00:00:00.000Z").toEpochMilli();
+    private static final Integer MACHINE_ID = JakeUtils.machineId(JakeIdTestUtils.splitIpv4("192.168.13.11"));
+    private static final Integer SAME_MACHINE_ID = JakeUtils.machineId(JakeIdTestUtils.splitIpv4("192.168.45.11"));
 
-    private static JakeId sameMill() {
-        long currentTimeMillis = Instant.parse("2022-01-01T00:00:00.000Z").toEpochMilli();
+    private static JakeId sameMillJakeId(long startTime, long currentTimeMillis, int machineId) {
         JakeIdBuilder jakeIdBuilder = JakeIdBuilder.create().modelS();
         return new JakeIdImpl(
-                JakeUtils.defaultStartTime(), jakeIdBuilder.getBitLengthOfTime(),
+                startTime, jakeIdBuilder.getBitLengthOfTime(),
                 jakeIdBuilder.getBitLengthOfMachineId(), jakeIdBuilder.getBitLengthOfSequence(),
-                jakeIdBuilder.getSequenceLifeCycle(),JakeUtils.machineId(JakeIdTestUtils.splitIpv4("192.168.13.11"))
+                jakeIdBuilder.getSequenceLifeCycle(), machineId
         ) {
             @Override
             public long currentTimeMillis() {
@@ -25,12 +28,12 @@ class JakeIdModelSTest {
         };
     }
 
-    private static JakeId customMill(AtomicLong currentTimeMillis) {
+    private static JakeId customMillJakeId(long startTime, AtomicLong currentTimeMillis, int machineId) {
         JakeIdBuilder jakeIdBuilder = JakeIdBuilder.create().modelS();
         return new JakeIdImpl(
-                JakeUtils.defaultStartTime(), jakeIdBuilder.getBitLengthOfTime(),
+                startTime, jakeIdBuilder.getBitLengthOfTime(),
                 jakeIdBuilder.getBitLengthOfMachineId(), jakeIdBuilder.getBitLengthOfSequence(),
-                jakeIdBuilder.getSequenceLifeCycle(),JakeUtils.machineId(JakeIdTestUtils.splitIpv4("192.168.13.11"))
+                jakeIdBuilder.getSequenceLifeCycle(), machineId
         ) {
             @Override
             public long currentTimeMillis() {
@@ -39,55 +42,61 @@ class JakeIdModelSTest {
         };
     }
 
+    private static long id(long startTime, long currentTimeMillis, long machineId) {
+        return ((currentTimeMillis - startTime) << 22)
+                | (machineId << 9);
+    }
+
     @Test
     void nextSameMilliId() {
-        JakeId jakeId = sameMill();
+        JakeId jakeId = sameMillJakeId(JakeUtils.defaultStartTime(), INIT_TIME_MILLS, MACHINE_ID);
+        long firstId = id(JakeUtils.defaultStartTime(), INIT_TIME_MILLS, MACHINE_ID);
         for(long l = 0; l<512; l++) {
             long id = jakeId.nextId();
             if(l == 0 || l == 511) {
                 JakeIdTestUtils.logId("nextSameMilliId", id);
             }
-            assertEquals(1058897343284909568L + l, id);
+            assertEquals(firstId + l, id);
         }
     }
 
     @Test
     void nexIncreaseMilliId() {
-        final AtomicLong currentTimeMillis = new AtomicLong(1663412306944L);
-        JakeId jakeId = customMill(currentTimeMillis);
-        for(long l = 0; l < 1024; l++) {
+        final AtomicLong currentTimeMillis = new AtomicLong(INIT_TIME_MILLS);
+        JakeId jakeId = customMillJakeId(JakeUtils.defaultStartTime(), currentTimeMillis, MACHINE_ID);
+        long firstId = id(JakeUtils.defaultStartTime(), INIT_TIME_MILLS, MACHINE_ID);
+        long nextId = id(JakeUtils.defaultStartTime(), INIT_TIME_MILLS + 1, MACHINE_ID);
+        long maxSequence = 512;
+        for(long l = 0; l < maxSequence*2; l++) {
             long id = jakeId.nextId();
-            if(l % 512 == 0 || l % 512 == 511) {
-                JakeIdTestUtils.logId("nexIncreaseMilliId", id);
-            }
-            if(l < 512) {
-                assertEquals(1152921504608556544L + l, id);
+            if(l < maxSequence) {
+                assertEquals(firstId + l, id);
             }else {
-                assertEquals(1152921504612750848L + (l % 512), id);
+                assertEquals( nextId + (l - maxSequence), id);
             }
-            if(l % 512 == 511) {
-                JakeIdTestUtils.log("nexIncreaseMilliId","l: " + l + "," + "nextMillis: " + currentTimeMillis.incrementAndGet());
+            if(l % maxSequence == maxSequence-1) {
+                long nextMills = currentTimeMillis.incrementAndGet();
+                JakeIdTestUtils.log("nexIncreaseMilliId","l: " + l + "," + "nextMillis: " + nextMills);
             }
         }
     }
 
     @Test
     void timestampGreaterThan1000() {
-        final AtomicLong currentTimeMillis = new AtomicLong(1663412306944L);
-        JakeId jakeId = customMill(currentTimeMillis);
+        final AtomicLong currentTimeMillis = new AtomicLong(INIT_TIME_MILLS);
+        JakeId jakeId = customMillJakeId(JakeUtils.defaultStartTime(), currentTimeMillis, MACHINE_ID);
         Thread thread = new Thread() {
             @Override
             public void run() {
                 for(int i = 0; i < 2000; i++) {
                     currentTimeMillis.decrementAndGet();
-                    LockSupport.parkNanos(1000000);
                 }
             }
         };
         thread.start();
         JakeIdException ex = null;
         try {
-            for(long l = 0; l < 10; l++) {
+            while (currentTimeMillis.get() <= INIT_TIME_MILLS) {
                 long id = jakeId.nextId();
                 JakeIdTestUtils.logId("timestampGreaterThan1000", id);
             }
@@ -99,28 +108,34 @@ class JakeIdModelSTest {
 
     @Test
     void timestampLessThan1000() {
-        final AtomicLong currentTimeMillis = new AtomicLong(1663412306944L);
-        JakeId jakeId = customMill(currentTimeMillis);
+        final AtomicLong currentTimeMillis = new AtomicLong(INIT_TIME_MILLS);
+        JakeId jakeId = customMillJakeId(JakeUtils.defaultStartTime(), currentTimeMillis, MACHINE_ID);
         Thread thread = new Thread() {
             @Override
             public void run() {
-                for(int i = 0; i < 2000; i++) {
-                    currentTimeMillis.incrementAndGet();
-                    LockSupport.parkNanos(1000000);
+                for(int i = 0; i < 999; i++) {
+                    currentTimeMillis.decrementAndGet();
                 }
+                currentTimeMillis.set(currentTimeMillis.get() + 2000);
             }
         };
         thread.start();
         long lastId = 0;
-        for(long l = 0; l < 10; l++) {
+        while (currentTimeMillis.get() <= INIT_TIME_MILLS) {
             long id = jakeId.nextId();
             assertTrue(id > lastId);
             lastId = id;
             JakeIdTestUtils.logId("timestampLessThan1000", id);
-            if(l == 0) {
-                currentTimeMillis.set(currentTimeMillis.get() - 1000);
-            }
         }
+    }
+
+    @Test
+    void sameMachineIdTest() {
+        JakeId jakeId1 = sameMillJakeId(JakeUtils.defaultStartTime(), INIT_TIME_MILLS, MACHINE_ID);
+        JakeId jakeId2 = sameMillJakeId(JakeUtils.defaultStartTime(), INIT_TIME_MILLS, SAME_MACHINE_ID);
+        long l1 = jakeId1.nextId();
+        long l2 = jakeId2.nextId();
+        assertEquals(l1, l2);
     }
 
     @Test
@@ -133,12 +148,12 @@ class JakeIdModelSTest {
             long id = jakeId.nextId();
             assertTrue(id > lastId);
             lastId = id;
-            if(l == 0 || l == 5120000) {
+            if(l == 0 || l == generatorIdCount) {
                 JakeIdTestUtils.logId("productionTest", id);
             }
         }
         long millis = System.currentTimeMillis() - timestamp;
         JakeIdTestUtils.log("productionTest", millis);
-        JakeIdTestUtils.log("productionTest", generatorIdCount / millis);
+        JakeIdTestUtils.log("productionTest", "per millis " + generatorIdCount / millis);
     }
 }
