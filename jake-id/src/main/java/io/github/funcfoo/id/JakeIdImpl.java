@@ -7,7 +7,7 @@ public class JakeIdImpl implements JakeId {
     protected static final long HALF_MILLIS_NANOS = ONE_MILLIS_NANOS / 2;
 
     private long customLastTime = 0;
-    private int sequence = 0;
+    private long sequence = 0;
 
     private final long customStartTime;
     private final int bitLengthSequenceAndMachineId;
@@ -21,35 +21,47 @@ public class JakeIdImpl implements JakeId {
     protected JakeIdImpl(
             long startTime, int bitLengthOfTime, int bitLengthOfMachineId,
             int bitLengthOfSequence, int sequenceLifeCycle, int machineId) {
-        if(sequenceLifeCycle > 1000 || sequenceLifeCycle < 1) {
-            throw new IllegalArgumentException("SequenceLifeCycle must be less than or equal 1000 and greater than 0");
-        }
-        long customStartTimeStamp = customTimeStamp(startTime, sequenceLifeCycle);
-        long customCurrentTimeStamp = customTimeStamp(currentTimeMillis(), sequenceLifeCycle);
-        int bitLengthMS = bitLengthOfMachineId + bitLengthOfSequence;
-        if(customStartTimeStamp < 0
-                || customStartTimeStamp > customCurrentTimeStamp) {
-            throw new IllegalArgumentException("StartTime must be less than currentTimeMillis and greater than 0");
-        }
-        long startStamp = customCurrentTimeStamp - customStartTimeStamp;
-        if(startStamp << bitLengthMS >> bitLengthMS != startStamp) {
-            throw new IllegalArgumentException("Time is out");
-        }
-        if(bitLengthOfTime + bitLengthOfMachineId + bitLengthOfSequence != 63) {
-            throw new IllegalArgumentException("Bit length must be equal 63");
-        }
-        int maxMachineId = ~(-1 << bitLengthOfMachineId);
-        if (machineId < 0 || machineId > maxMachineId) {
-            throw new IllegalArgumentException("Machine id must be greater than 0 and less than " + maxMachineId);
-        }
-        this.customStartTime = customStartTimeStamp;
-        this.bitLengthSequenceAndMachineId = bitLengthMS;
+        checkConstructorArgs(startTime, bitLengthOfTime, bitLengthOfMachineId,
+                bitLengthOfSequence, sequenceLifeCycle, machineId);
+        this.customStartTime = customTimeStamp(startTime, sequenceLifeCycle);
+        this.bitLengthSequenceAndMachineId = bitLengthOfMachineId + bitLengthOfSequence;
         this.machineId = machineId << bitLengthOfSequence;
         this.maxSequence = ~(-1 << bitLengthOfSequence);
         this.maxTime = ~(-1L << bitLengthOfTime);
         this.sequenceLifeCycle = sequenceLifeCycle;
         this.waitNanos = waitNanos(sequenceLifeCycle);
         this.customOneSecond = customTimeStamp(1000, this.sequenceLifeCycle);
+    }
+
+    private void checkConstructorArgs(
+            long startTime, int bitLengthOfTime, int bitLengthOfMachineId,
+            int bitLengthOfSequence, int sequenceLifeCycle, int machineId) {
+        long currentTimeMillis = currentTimeMillis();
+        checkPositiveNum(startTime, "startTime");
+        checkPositiveNum(bitLengthOfTime, "bitLengthOfTime");
+        checkPositiveNum(bitLengthOfMachineId, "bitLengthOfMachineId");
+        checkPositiveNum(bitLengthOfSequence, "bitLengthOfSequence");
+        checkPositiveNum(sequenceLifeCycle, "sequenceLifeCycle");
+        checkPositiveNum(machineId,"machineId");
+        if(sequenceLifeCycle > 1000) {
+            throw new IllegalArgumentException("The sequenceLifeCycle must be less than or equal 1000");
+        }
+        if(startTime > currentTimeMillis) {
+            throw new IllegalArgumentException("The startTime must be less than currentTimeMillis");
+        }
+        if(bitLengthOfTime + bitLengthOfMachineId + bitLengthOfSequence != 63) {
+            throw new IllegalArgumentException("Bit length must be equal 63");
+        }
+        int maxMachineId = ~(-1 << bitLengthOfMachineId);
+        if (machineId > maxMachineId) {
+            throw new IllegalArgumentException("the machineId must be greater than 0 and less than " + maxMachineId);
+        }
+        int bitLengthMS = bitLengthOfMachineId + bitLengthOfSequence;
+        long startStamp = customTimeStamp(currentTimeMillis, sequenceLifeCycle)
+                - customTimeStamp(startTime, sequenceLifeCycle);
+        if(startStamp << bitLengthMS >> bitLengthMS != startStamp) {
+            throw new IllegalArgumentException("Time is out, Please check The startTime");
+        }
     }
 
     /**
@@ -65,20 +77,6 @@ public class JakeIdImpl implements JakeId {
         return customTimeStamp(currentTimeMillis(), this.sequenceLifeCycle);
     }
 
-    /**
-     * @return time/sequenceLifeCycle
-     */
-    protected static long customTimeStamp(long time, int sequenceLifeCycle) {
-        if(sequenceLifeCycle == 1) {
-            return time;
-        }
-        return time / sequenceLifeCycle;
-    }
-
-    protected static long waitNanos(int sequenceLifeCycle) {
-        return HALF_MILLIS_NANOS * sequenceLifeCycle + 1;
-    }
-
     private long nextTime(long now) {
         long time = now;
         // max wait time: 1 second
@@ -88,7 +86,7 @@ public class JakeIdImpl implements JakeId {
             time = currentCustomTimeStamp();
         }
         if (this.customLastTime - time > customOneSecond) {
-            throw new JakeIdException("CurrentTimeMillis greater than lastTime 1000! Please check timestamp!");
+            throw new JakeIdException("The currentTimeMillis greater than lastTime one second! Please check the system timestamp!");
         }
         return time;
     }
@@ -116,5 +114,25 @@ public class JakeIdImpl implements JakeId {
         }
         this.customLastTime = currentCustomTimestamp;
         return id();
+    }
+
+    /**
+     * @return time/sequenceLifeCycle
+     */
+    protected static long customTimeStamp(long time, int sequenceLifeCycle) {
+        if(sequenceLifeCycle == 1) {
+            return time;
+        }
+        return time / sequenceLifeCycle;
+    }
+
+    protected static long waitNanos(int sequenceLifeCycle) {
+        return HALF_MILLIS_NANOS * sequenceLifeCycle + 1;
+    }
+
+    protected static void checkPositiveNum(long num, String name) {
+        if(num < 1) {
+            throw new IllegalArgumentException("The " + name +" must be greater than 0");
+        }
     }
 }
