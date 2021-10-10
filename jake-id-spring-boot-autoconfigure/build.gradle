@@ -3,6 +3,8 @@ plugins {
 }
 
 apply plugin: 'io.spring.dependency-management'
+apply plugin: 'org.barfuin.gradle.jacocolog'
+
 
 bootJar.enabled = false
 

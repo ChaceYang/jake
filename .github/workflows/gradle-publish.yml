@@ -54,10 +54,20 @@ jobs:
       run: chmod +x gradlew
 
     - name: Build with Gradle
-      run: ./gradlew --scan --stacktrace --warning-mode=all build
+      run: ./gradlew --scan --stacktrace --warning-mode=all build jacocoAggregatedReport
 
     - name: Deploy with Gradle
       run: ./gradlew --scan publish -x check -Psigning.gnupg.executable=gpg -Psigning.gnupg.keyName=${{ secrets.GPG_NAME }} -Psigning.gnupg.passphrase=${{ secrets.GPG_PASSWORD }}
       env:
         OSSRH_USER: ${{ secrets.OSSRH_USER }}
         OSSRH_PASS: ${{ secrets.OSSRH_PASS }}
+
+    - name: codecov
+      uses: codecov/codecov-action@v2
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
+        files: ./build/reports/jacoco/jacocoAggregatedReport/jacocoAggregatedReport.xml
+        flags: unittests # optional
+        name: codecov-umbrella # optional
+        fail_ci_if_error: true # optional (default = false)
+        verbose: true # optional (default = false)
