@@ -1,5 +1,10 @@
 Jake ID
 ====
+[![Build master branch](https://github.com/funcfoo/jake/actions/workflows/gradle-publish.yml/badge.svg)](https://github.com/funcfoo/jake/actions)
+[![Maven Central with version prefix filter](https://img.shields.io/maven-central/v/io.github.funcfoo/jake-id-spring-boot-starter.svg)](https://search.maven.org/search?q=g:io.github.funcfoo%20jake-id)
+[![LICENSE](https://img.shields.io/badge/license-MIT-green)](https://github.com/funcfoo/jake/blob/master/LICENSE)
+[![coverage](https://img.shields.io/codecov/c/github/funcfoo/jake/master)](https://app.codecov.io/gh/funcfoo/jake)
+
 A distributed unique ID generator inspired by [snowflake](https://blog.twitter.com/2010/announcing-snowflake) and [sonyflake](https://github.com/sony/sonyflake)
 
 The default ModelS composed of
@@ -21,12 +26,12 @@ Maven
 <dependency>
   <groupId>io.github.funcfoo</groupId>
   <artifactId>jake-id-spring-boot-starter</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.0</version>
 </dependency>
 ```
 Gradle
 ```groovy
-  implementation 'io.github.funcfoo:jake-id-spring-boot-starter:1.0.0-SNAPSHOT'
+  implementation 'io.github.funcfoo:jake-id-spring-boot-starter:1.0.0'
 ```
 
 License

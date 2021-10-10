@@ -20,7 +20,7 @@ subprojects {
     apply plugin: 'signing'
 
     group 'io.github.funcfoo'
-    version '1.0.0-SNAPSHOT'
+    version '1.0.0'
 
     ext {
         isNeedSign = project.hasProperty('signing.gnupg.keyName')
